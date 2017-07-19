@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/jamesWestbrook/service-template-mariadb/issues"
   },
-  "homepage": "https://github.com/jamesWestbrook/service-template-mariadb#readme"
+  "homepage": "https://github.com/jamesWestbrook/service-template-mariadb#readme",
+  "dependencies": {
+    "express": "^4.15.3"
+  }
 }
