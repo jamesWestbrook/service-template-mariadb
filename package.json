@@ -1,0 +1,19 @@
+{
+  "name": "service-template-mariadb",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jamesWestbrook/service-template-mariadb.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jamesWestbrook/service-template-mariadb/issues"
+  },
+  "homepage": "https://github.com/jamesWestbrook/service-template-mariadb#readme"
+}
