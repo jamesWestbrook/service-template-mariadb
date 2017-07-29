@@ -1,10 +1,9 @@
 {
   "name": "service-template-mariadb",
   "version": "1.0.0",
-  "description": "a template",
+  "description": "a template for connecting to a mariadb instance via node",
   "main": "index.js",
   "scripts": {
-    "test": "test",
     "start": "node index.js"
   },
   "repository": {

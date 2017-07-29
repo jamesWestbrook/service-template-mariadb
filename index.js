@@ -9,10 +9,7 @@ const c = new Client({
     password: ''
 })
 
-
 app.get('/', function(req, res) {
-
-
 
     c.query('SHOW DATABASES', function(err, rows) {
         if (err) {
@@ -22,11 +19,10 @@ app.get('/', function(req, res) {
         res.send(rows)
     })
 
-
     c.end()
 
 })
 
 app.listen(3000, function() {
-    console.log('Example app listening on port 3000!')
+    console.log('app listening on port 3000')
 })
