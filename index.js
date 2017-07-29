@@ -1,17 +1,13 @@
 const express = require('express')
-const Client = require('mariasql')
+const client = require('./db/client')
 
 const app = express()
 
-const c = new Client({
-    host: '127.0.0.1',
-    user: 'foo',
-    password: ''
-})
+app.get('/', (req, res) => {
 
-app.get('/', function(req, res) {
+    let c = client.connect('test')
 
-    c.query('SHOW DATABASES', function(err, rows) {
+    c.query('SHOW DATABASES', (err, rows) => {
         if (err) {
             throw err;
         }
@@ -23,6 +19,6 @@ app.get('/', function(req, res) {
 
 })
 
-app.listen(3000, function() {
+app.listen(3000, () => {
     console.log('app listening on port 3000')
 })
