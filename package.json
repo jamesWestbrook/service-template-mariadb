@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/jamesWestbrook/service-template-mariadb#readme",
   "dependencies": {
+    "checksum": "^0.1.1",
     "express": "^4.15.3",
     "lodash": "^4.17.4",
     "mariasql": "^0.2.6"

@@ -3,7 +3,7 @@ const migration = require('./migration/migration')
 const client = require('./db/client')
 
 let init = () => {
-   migration.migrate('./migration/tmp', { client: client, db: 'test'})
+   migration.migrate('./tmp', { client: client, db: 'test'})
 }
 
 init()
