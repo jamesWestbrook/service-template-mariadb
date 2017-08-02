@@ -9,7 +9,6 @@ const connect = (dbName) => {
     })
 }
 
-
 module.exports = { 
     connect: connect
 }

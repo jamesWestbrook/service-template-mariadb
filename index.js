@@ -1,24 +1,31 @@
 const express = require('express')
+const migration = require('./migration/migration')
 const client = require('./db/client')
 
-const app = express()
+let init = () => {
+   migration.migrate('./migration/tmp', { client: client, db: 'test'})
+}
 
-app.get('/', (req, res) => {
+init()
 
-    let c = client.connect('test')
+// const app = express()
 
-    c.query('SHOW DATABASES', (err, rows) => {
-        if (err) {
-            throw err;
-        }
+// app.get('/', (req, res) => {
 
-        res.send(rows)
-    })
+//     let c = client.connect('test')
 
-    c.end()
+//     c.query('SHOW DATABASES', (err, rows) => {
+//         if (err) {
+//             throw err;
+//         }
 
-})
+//         res.send(rows)
+//     })
 
-app.listen(3000, () => {
-    console.log('app listening on port 3000')
-})
+//     c.end()
+
+// })
+
+// app.listen(3000, () => {
+//     console.log('app listening on port 3000')
+// })
