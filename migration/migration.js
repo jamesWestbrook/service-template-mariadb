@@ -45,7 +45,6 @@ const checkForSchemaTable = (client, databaseName) => {
             sql.checkForShcemaTable, 
             { db: databaseName },
             (err, rows) => {
-                exists = 
                 resovle(rows.length === 1)
             }
         )
