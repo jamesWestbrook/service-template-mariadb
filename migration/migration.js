@@ -8,33 +8,26 @@ const migrate = (directory, client, databaseName) => {
     //gather migration files
     //if no migration files exist error out
     gatherMigrationFilesFromFs(directory)
-    .then((migrationFiles) => {
+    .then((fromFs) => {
 
         //read for schema table
         checkForSchemaTable(client, databaseName)
-        .then(
-            (result) => {
+        .then((schemaExists) => {
 
-                console.log(result)
+                if(schemaExists) {
+                    gatherMigrationFilesFromDb(client)
+                    .then(fromDb => compareFilesToDb(fromDb, fromFs))
+                    .catch(err => handleError(err))
+                } 
 
-                //if table does exist, read it and compare migration data 
-                // if(result) {
-
-                // } 
-
-                // //if it does not exist, create it and write migration data
-                // else {
-
-                // }
-            })
-        .catch(error => {
-            console.error(error)
+                else {
+                    createSchema(client)
+                }
         })
+        .catch(err => handleError(err))
 
     })
-    .catch(error => {
-        console.error(error)
-    })
+    .catch(err => handleError(err))
 }
 
 const checkForSchemaTable = (client, databaseName) => {
@@ -45,6 +38,11 @@ const checkForSchemaTable = (client, databaseName) => {
             sql.checkForShcemaTable, 
             { db: databaseName },
             (err, rows) => {
+                
+                if (err) {
+                    reject(err)
+                }
+
                 resovle(rows.length === 1)
             }
         )
@@ -53,9 +51,9 @@ const checkForSchemaTable = (client, databaseName) => {
     })
 }
 
-const createSchemaIfNotExist = (client) => {
+const createSchema = (client) => {
     return new Promise((resovle) => {
-         client.query(sql.createSchema, handleNoResultErr)
+         client.query(sql.createSchema, handleError)
     })
 }
 
@@ -90,27 +88,40 @@ const gatherMigrationFilesFromFs = (directory) => {
             resolve(migrationFiles)    
         } else {
             reject('no migration files found in directory: ' + directory)
-        }
-
-        
+        }       
     }) 
 }
 
-const compareFilesToDb = (fromDB, fromFs) => {
+const gatherMigrationFilesFromDb = (client) => {
+    return new Promise((resolve, reject) => {
+        client.query(sql.readSchema, null, { useArray: true, metadata: false }, function(err, rows) {
+            
+            if (err) {
+                reject(err)
+            }
+            resolve(rows)
+        });
+    })
+}
 
-    if (fromDb.name !== fromFile.name) {
+//TODO rewite this whole thing
+const compareFilesToDb = (fromDb, fromFs) => {
+
+    console.log('fromDb:', fromDb, '\nfromFs:', fromFs)
+
+    if (fromDb.name !== fromFs.name) {
         throw 'previous migration files have been removed or renamed. expected' + 
-        fromDb.name + ' to equal ' + fromFile.name
+        fromDb.name + ' to equal ' + fromFs.name
     }
 
-    if (fromDb.checksum !== fromFile.checksum) {
+    if (fromDb.checksum !== fromFs.checksum) {
         throw 'previous migration files have been removed or modified. expected checksum from' + 
         fromDb.name + '('+ fromDb.checksum +')' + ' to equal ' + 
-        fromFile.name + '('+ fromFile.checksum +')'
+        fromFs.name + '('+ fromFs.checksum +')'
     }
 }
 
-const handleNoResultErr = (err) => {
+const handleError = (err) => {
      if (err) {
         console.error(err)
     }   
