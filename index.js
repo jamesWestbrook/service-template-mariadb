@@ -1,11 +1,21 @@
 const express = require('express')
 const migration = require('./migration/migration')
-const client = require('./db/client')
+const Client = require('mariasql')
 
 let init = () => {
-    connection = { client: client, db: 'test'}
 
-    migration.migrate('./tmp', connection)
+    dbName = 'test'
+
+    let client = new Client({
+        host: '127.0.0.1',
+        user: 'foo',
+        password: '',
+        db: dbName        
+    })
+
+    migration.migrate('./tmp', client, dbName)
+
+    client.end()
 }
 
 init()
