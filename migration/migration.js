@@ -5,29 +5,35 @@ const sql = require('./sql')
 
 const migrate = (directory, client, databaseName) => {
 
-    //gather migration files
-    //if no migration files exist error out
-    gatherMigrationFilesFromFs(directory)
+    return gatherMigrationFilesFromFs(directory)
     .then((fromFs) => {
 
-        //read for schema table
-        checkForSchemaTable(client, databaseName)
+        return checkForSchemaTable(client, databaseName)
         .then((schemaExists) => {
 
-                if(schemaExists) {
-                    gatherMigrationFilesFromDb(client)
-                    .then(fromDb => compareFilesToDb(fromDb, fromFs))
-                    .catch(err => handleError(err))
-                } 
+            if (schemaExists) {
 
-                else {
-                    createSchema(client)
-                }
+                gatherMigrationFilesFromDb(client)
+                .then(fromDb => compareFilesToDb(fromDb, fromFs))
+                .then((results) => {
+
+                    if (results.match && results.newMigration) {
+                        writeNewFiles(results)
+                        .then(recordNewMigration(results))
+                        .catch(err => handleError(err))
+                    } 
+                })
+                .catch(err => handleError(err))
+            } 
+
+            else {
+                createSchema(client)
+            }
         })
         .catch(err => handleError(err))
-
     })
     .catch(err => handleError(err))
+
 }
 
 const checkForSchemaTable = (client, databaseName) => {
@@ -99,32 +105,41 @@ const gatherMigrationFilesFromDb = (client) => {
             if (err) {
                 reject(err)
             }
+
             resolve(rows)
         });
     })
 }
 
-//TODO rewite this whole thing
 const compareFilesToDb = (fromDb, fromFs) => {
 
-    console.log('fromDb:', fromDb, '\nfromFs:', fromFs)
+    return new Promise((resolve) => {
 
-    if (fromDb.name !== fromFs.name) {
-        throw 'previous migration files have been removed or renamed. expected' + 
-        fromDb.name + ' to equal ' + fromFs.name
-    }
+        results = {}
 
-    if (fromDb.checksum !== fromFs.checksum) {
-        throw 'previous migration files have been removed or modified. expected checksum from' + 
-        fromDb.name + '('+ fromDb.checksum +')' + ' to equal ' + 
-        fromFs.name + '('+ fromFs.checksum +')'
-    }
+        results.match = false
+
+        resolve(results)
+
+    })
+
+
+    // if (fromDb.name !== fromFs.name) {
+    //     throw 'previous migration files have been removed or renamed. expected' + 
+    //     fromDb.name + ' to equal ' + fromFs.name
+    // }
+
+    // if (fromDb.checksum !== fromFs.checksum) {
+    //     throw 'previous migration files have been removed or modified. expected checksum from' + 
+    //     fromDb.name + '('+ fromDb.checksum +')' + ' to equal ' + 
+    //     fromFs.name + '('+ fromFs.checksum +')'
+    // }
 }
 
 const handleError = (err) => {
-     if (err) {
+    if (err) {
         console.error(err)
-    }   
+    }
 }
 
 module.exports = {
