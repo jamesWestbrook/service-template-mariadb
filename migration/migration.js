@@ -15,11 +15,11 @@ const migrate = (directory, client, databaseName) => {
 
                 gatherMigrationFilesFromDb(client)
                 .then(fromDb => compareFilesToDb(fromDb, fromFs))
-                .then((results) => {
+                .then((newFiles) => {
 
-                    if (results.match && results.newMigration) {
-                        writeNewFiles(results)
-                        .then(recordNewMigration(results))
+                    if (newFiles) {
+                        executeNewMigration(newFiles)
+                        .then(recordNewMigration(newFiles))
                         .catch(err => handleError(err))
                     } 
                 })
@@ -33,7 +33,6 @@ const migrate = (directory, client, databaseName) => {
         .catch(err => handleError(err))
     })
     .catch(err => handleError(err))
-
 }
 
 const checkForSchemaTable = (client, databaseName) => {
@@ -64,7 +63,6 @@ const createSchema = (client) => {
 }
 
 const gatherMigrationFilesFromFs = (directory) => {
-
     return new Promise((resolve, reject) => {
 
         if (!directory) {
@@ -85,7 +83,7 @@ const gatherMigrationFilesFromFs = (directory) => {
         })
 
         migrationFiles =  _.sortBy(migrationFiles, (f) => {
-            console.log('\t'+f.fileName)
+            console.log('\n*'+f.fileName)
                 return f.fileName
             }
         )        
@@ -115,31 +113,48 @@ const compareFilesToDb = (fromDb, fromFs) => {
 
     return new Promise((resolve) => {
 
-        results = {}
+        for (i = 0; i < fromDb.length; i++) {
+            dbRecord = fromDb[i]
+            fsRecord = fromFs[i]
 
-        results.match = false
+            if (dbRecord.name !== fsRecord.name
+                || dbRecord.checksum != fsRecord.checksum) {
+                reject(createMismatchMessage(dbRecord, fsRecord))
+            }
+        }
 
-        resolve(results)
+        //resolves with new files to be migrated
+        if (fromFs.length > fromDb.length) {
+            resolve(fromFs.splice(fromDb.length))
+        }
 
+        //when nothing needs to be migrated
+        resolve(undefined)
     })
+}
 
+const executeNewMigration = (newFiles) => {
+    return new Promise((resolve, reject) => {
+        console.log('newFiles executed', newFiles)
+        resolve(newFiles)
+    })
+}
 
-    // if (fromDb.name !== fromFs.name) {
-    //     throw 'previous migration files have been removed or renamed. expected' + 
-    //     fromDb.name + ' to equal ' + fromFs.name
-    // }
-
-    // if (fromDb.checksum !== fromFs.checksum) {
-    //     throw 'previous migration files have been removed or modified. expected checksum from' + 
-    //     fromDb.name + '('+ fromDb.checksum +')' + ' to equal ' + 
-    //     fromFs.name + '('+ fromFs.checksum +')'
-    // }
+const recordNewMigration = (newFiles) => {
+    return new Promise((resolve, reject) => {
+        console.log('newFiles recorded', newFiles)
+        resolve(newFiles)        
+    })
 }
 
 const handleError = (err) => {
-    if (err) {
-        console.error(err)
-    }
+    console.error(err)
+}
+
+const createMismatchMessage = (dbRecord, fsRecord) => {
+    return  'a migration file appears to have changed... cannot proceed with migration\n' +
+    'DB Record: ' + dbRecord.name + ' - ' + dbRecord.checksum + '\n' +
+    'FS Record: ' + fsRecord.name + ' - ' + fsRecord.checksum
 }
 
 module.exports = {
