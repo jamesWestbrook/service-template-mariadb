@@ -1,1 +1,5 @@
-123
+CREATE TABLE IF NOT EXISTS test_table (
+    test_row_1 INT UNSIGNED NOT NULL AUTO_INCREMENT, 
+    test_row_2 INT UNSIGNED NOT NULL,
+    PRIMARY KEY (test_row_1)
+)
