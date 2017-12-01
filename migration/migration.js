@@ -12,11 +12,13 @@ const migrate = (dbInfo, migrationDirectory) => {
         return gatherMigrationFilesFromFs(migrationDirectory)
         .then(fromFs => doMigration(fromFs, client, dbInfo))
         .catch(err => handleError(err))
+        //behaves as finally
         .then(() => {
             if (client) { 
                 client.end() 
             }
         })
+        .catch(err => handleError(err)) //feels like java
     })
     .catch(err => handleError(err))
 }
@@ -38,12 +40,12 @@ const gatherMigrationFilesFromFs = (directory) => {
 
         fs.readdirSync(directory).forEach((fileName) => {        
             let file = fs.readFileSync(directory + '/' + fileName, 'utf8')    
-            migrationFiles.push({ fileName: fileName, checksum: cs(file), content: file })
+            migrationFiles.push({ name: fileName, checksum: cs(file), content: file })
         })
 
         migrationFiles =  _.sortBy(migrationFiles, (f) => {
-            console.log('\n * '+f.fileName)
-                return f.fileName
+            console.log('\n * '+f.name)
+                return f.name
             }
         )        
 
@@ -74,7 +76,7 @@ const doMigration = (fromFs, client, dbInfo) => {
                     }
 
                 })
-                .catch(err => handleError)
+                .catch(err => handleError(err))
             }
 
             else {
@@ -88,15 +90,11 @@ const doMigration = (fromFs, client, dbInfo) => {
         .catch(err => handleError(err))
 
     })
-
 }
-
-
 
 const checkForSchemaTable = (client, databaseName) => {
 
     return new Promise((resovle, reject) => {
-
         client.query(
             sql.checkForShcemaTable, 
             { db: databaseName },
@@ -109,41 +107,45 @@ const checkForSchemaTable = (client, databaseName) => {
                 resovle(rows.length === 1)
             }
         )
-
-        
     })
 }
 
 const createSchema = (client) => {
+
     return new Promise((resovle) => {
-         client.query(sql.createSchema, handleError)
+         client.query(sql.createSchema, (err) => { if (err) { throw err }})
     })
 }
-
-
 
 const gatherMigrationFilesFromDb = (client) => {
     return new Promise((resolve, reject) => {
-        client.query(sql.readSchema, null, { useArray: true, metadata: false }, function(err, rows) {
+        client.query(
+            sql.readSchema, 
+            null, 
+            { useArray: false, metadata: false }, 
+            (err, rows) => {
             
-            if (err) {
-                reject(err)
-            }
+                if (err) {
+                    throw err
+                }
 
-            resolve(rows)
-        });
+                resolve(rows)
+            }
+        )
     })
 }
 
+//TODO comparison can be done by a stricter query and compairing record counts
 const compareFilesToDb = (fromDb, fromFs) => {
 
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
 
+        //comparison
         for (i = 0; i < fromDb.length; i++) {
             dbRecord = fromDb[i]
             fsRecord = fromFs[i]
 
-            if (dbRecord.name !== fsRecord.name
+            if (dbRecord.file_name !== fsRecord.name
                 || dbRecord.checksum != fsRecord.checksum) {
                 reject(createMismatchMessage(dbRecord, fsRecord))
             }
@@ -154,8 +156,8 @@ const compareFilesToDb = (fromDb, fromFs) => {
             resolve(fromFs.splice(fromDb.length))
         }
 
-        //when nothing needs to be migrated
-        resolve(undefined)
+        //nothing needs to be migrated
+        resolve()
     })
 }
 
@@ -165,13 +167,7 @@ const executeNewMigration = (newFiles, client) => {
         console.log('migration executing...')
 
         newFiles.forEach((file) => {
-            client.query(file.content, (err, rows) => {
-
-                if(err) {
-                    reject(err)
-                }
-
-            })
+            client.query(file.content, (err) => { if (err) { throw err }})
         })
 
         resolve(newFiles)
@@ -181,21 +177,30 @@ const executeNewMigration = (newFiles, client) => {
 const recordNewMigration = (newFiles, client) => {
     return new Promise((resolve, reject) => {
 
-        console.log('recording migration...')
+        console.log('recording newly migrated files...')
 
-        resolve(newFiles)        
+        newFiles.forEach((file) => {
+            client.query(sql.writeToSchema, { name: file.name, checksum: file.checksum }, handleError)
+        })
+
+        resolve()
     })
 }
 
 const handleError = (err) => {
-    console.log('something went wrong...\n')
-    console.log(err)
-    throw err
+
+    if (err) {
+        console.log('something went wrong...')
+        console.log(err)
+        throw err
+    }
 }
 
 const createMismatchMessage = (dbRecord, fsRecord) => {
+    console.log('*******',dbRecord)
+
     return  'a migration file appears to have changed... cannot proceed with migration\n' +
-    'DB Record: ' + dbRecord.name + ' - ' + dbRecord.checksum + '\n' +
+    'DB Record: ' + dbRecord.file_name + ' - ' + dbRecord.checksum + '\n' +
     'FS Record: ' + fsRecord.name + ' - ' + fsRecord.checksum
 }
 
@@ -215,7 +220,7 @@ const openConnection = (dbInfo) => {
 }
 
 module.exports = {
-    migrate     : migrate
+    migrate: migrate
 }
 
 

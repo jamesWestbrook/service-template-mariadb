@@ -2,6 +2,8 @@ const express = require('express')
 const migration = require('./migration/migration')
 const app = express()
 
+
+
 let init = () => {
 
     //replace with env vars
@@ -23,22 +25,9 @@ let init = () => {
             console.log('app listening on port ', port)
         })
     })
-
-    // migration.migrate('./tmp', client, dbName)
-    // .then((success) => {
-
-    //     if (success) {
-    //         console.log('done with migration')
-    //         console.log('starting app')
-
-    //         app.listen(3000, () => {
-    //             console.log('app listening on port 3000')
-    //         })            
-    //     }
-
-    //     client.end()
-    // })        
-    // .catch(err => { console.error(err)})
+    .catch(err => {
+        console.log(err)
+    })
 }
 
 app.get('/', (req, res) => {
@@ -57,6 +46,7 @@ app.get('/', (req, res) => {
 
     // c.end()
 })
+
 
 init()
 
