@@ -4,7 +4,8 @@
   "description": "a template for connecting to a mariadb instance via node",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -21,5 +22,10 @@
     "express": "^4.15.3",
     "lodash": "^4.17.4",
     "mariasql": "^0.2.6"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "mocha": "^4.0.1"
   }
 }

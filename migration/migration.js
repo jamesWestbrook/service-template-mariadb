@@ -43,8 +43,9 @@ const gatherMigrationFilesFromFs = (directory) => {
             migrationFiles.push({ name: fileName, checksum: cs(file), content: file })
         })
 
+        console.log('\n')
         migrationFiles =  _.sortBy(migrationFiles, (f) => {
-            console.log('\n * '+f.name)
+            console.log(' * '+f.name)
                 return f.name
             }
         )
@@ -167,11 +168,12 @@ const compareFilesToDb = (fromDb, fromFs) => {
         if (fromFs.length > fromDb.length) {
             console.log('new files found for migration!')
             resolve(fromFs.splice(fromDb.length))
+        } else {
+            //nothing needs to be migrated
+            console.log('nothing needs migrating...')
+            resolve()
         }
 
-        //nothing needs to be migrated
-        console.log('nothing needs migrating...')
-        resolve()
     })
 }
 
@@ -219,15 +221,20 @@ const createMismatchMessage = (dbRecord, fsRecord) => {
 
 const openConnection = (dbInfo) => {
     return new Promise((resolve, reject) => {
-        
-        let client = new Client({
-            host: dbInfo.host,
-            user: dbInfo.user,
-            password: dbInfo.password,
-            db: dbInfo.name
-        })
 
-        resolve(client)
+        if (dbInfo) {
+            let client = new Client({
+                host: dbInfo.host,
+                user: dbInfo.user,
+                password: dbInfo.password,
+                db: dbInfo.name
+            })
+
+            resolve(client)
+        } else {
+            reject('no database information provided')
+        }
+        
 
     })
 }
