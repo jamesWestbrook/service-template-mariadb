@@ -1,0 +1,1 @@
+INSERT INTO test_table (test_row_2) VALUES (1), (2);
