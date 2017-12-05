@@ -47,7 +47,7 @@ const gatherMigrationFilesFromFs = (directory) => {
             console.log('\n * '+f.name)
                 return f.name
             }
-        )        
+        )
 
         if(migrationFiles.length > 0) {
             resolve(migrationFiles)    
@@ -73,6 +73,8 @@ const doMigration = (fromFs, client, dbInfo) => {
                         .then(recordNewMigration(newFiles, client))
                         .then(resolve())
                         .catch(err => handleError(err))
+                    } else {
+                        resolve()
                     }
 
                 })
@@ -104,13 +106,22 @@ const checkForSchemaTable = (client, databaseName) => {
                     reject(err)
                 }
 
-                resovle(rows.length === 1)
+                if (rows.length === 1) {
+                    console.log('\nexisting migration schema found')
+                    resovle(true)
+                } else {
+                    console.log('\nno migration schema found')
+                    resovle(false)
+                }
+
             }
         )
     })
 }
 
 const createSchema = (client) => {
+
+    console.log('creating new migration schema')
 
     return new Promise((resovle) => {
          client.query(sql.createSchema, (err) => { if (err) { throw err }})
@@ -119,10 +130,7 @@ const createSchema = (client) => {
 
 const gatherMigrationFilesFromDb = (client) => {
     return new Promise((resolve, reject) => {
-        client.query(
-            sql.readSchema, 
-            null, 
-            { useArray: false, metadata: false }, 
+        client.query(sql.readSchema, null, { useArray: false, metadata: false }, 
             (err, rows) => {
             
                 if (err) {
@@ -140,6 +148,8 @@ const compareFilesToDb = (fromDb, fromFs) => {
 
     return new Promise((resolve, reject) => {
 
+        console.log('comparting migration files to historical migration data')
+
         //comparison
         for (i = 0; i < fromDb.length; i++) {
             dbRecord = fromDb[i]
@@ -148,15 +158,19 @@ const compareFilesToDb = (fromDb, fromFs) => {
             if (dbRecord.file_name !== fsRecord.name
                 || dbRecord.checksum != fsRecord.checksum) {
                 reject(createMismatchMessage(dbRecord, fsRecord))
+            } else {
+                console.log('record (',i+1,'/',fromDb.length,') match')
             }
         }
 
         //resolves with new files to be migrated
         if (fromFs.length > fromDb.length) {
+            console.log('new files found for migration!')
             resolve(fromFs.splice(fromDb.length))
         }
 
         //nothing needs to be migrated
+        console.log('nothing needs migrating...')
         resolve()
     })
 }
@@ -197,7 +211,6 @@ const handleError = (err) => {
 }
 
 const createMismatchMessage = (dbRecord, fsRecord) => {
-    console.log('*******',dbRecord)
 
     return  'a migration file appears to have changed... cannot proceed with migration\n' +
     'DB Record: ' + dbRecord.file_name + ' - ' + dbRecord.checksum + '\n' +
